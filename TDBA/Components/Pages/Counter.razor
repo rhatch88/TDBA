@@ -1,19 +1,49 @@
 ﻿@page "/counter"
+@using TDBA.Data
 @rendermode InteractiveServer
+@using Microsoft.EntityFrameworkCore
 
-<PageTitle>Counter</PageTitle>
+<PageTitle>Event Suggestions</PageTitle>
 
-<h1>Counter</h1>
+@if (RandomEvent is not null)
+{
+    <p><strong>Event:</strong> @RandomEvent.Name</p>
+    <p><strong>Age Group:</strong> @RandomEvent.AgeGroup</p>
+    <p><strong>Price Range:</strong> @RandomEvent.PriceRange</p>
+    <p><strong>Type:</strong> @(RandomEvent.IsIndoor ? "Indoor" : "Outdoor")</p>
+}
+else
+{
+    <p>No events available.</p>
+}
 
-<p role="status">Current count: @currentCount</p>
-
-<button class="btn btn-primary" @onclick="IncrementCount">Click me</button>
+<button @onclick="GetRandomEvent">Fun Suggestions</button>
 
 @code {
-    private int currentCount = 0;
+    private List<EventModel> Events = new();
+    private EventModel? RandomEvent;
+    private Random random = new Random();
 
-    private void IncrementCount()
+    [Inject]
+    protected AppDbContext DbContext { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync()
     {
-        currentCount++;
+        await LoadEvents();
+        GetRandomEvent();
+    }
+
+    private async Task LoadEvents()
+    {
+        Events = await DbContext.Events.ToListAsync();
+    }
+
+    private void GetRandomEvent()
+    {
+        if (Events.Any())
+        {
+            int index = random.Next(Events.Count);
+            RandomEvent = Events[index];
+        }
     }
 }

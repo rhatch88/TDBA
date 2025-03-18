@@ -6,12 +6,12 @@
 
 <h3>Add New Event</h3>
 
-@if (Message is not null)
+@if (!string.IsNullOrEmpty(Message))
 {
     <p style="color: green;">@Message</p>
 }
 
-<EditForm Model="@NewEvent" OnValidSubmit="HandleValidSubmit">
+<EditForm Model="@NewEvent" OnValidSubmit="HandleValidSubmit" FormName="AddEventForm">
     <DataAnnotationsValidator />
 
     <div>
@@ -57,7 +57,7 @@
 
 <h3>Event List</h3>
 
-@if (Events != null && Events.Any())
+@if (Events is not null && Events.Any())
 {
     <table>
         <thead>
@@ -107,7 +107,7 @@ else
         await DbContext.SaveChangesAsync();
 
         Message = "Event added successfully!";
-        NewEvent = new EventModel();
+        NewEvent = new EventModel(); // Reset form
         await LoadEvents();
     }
 }
