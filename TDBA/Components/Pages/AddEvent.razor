@@ -1,0 +1,113 @@
+﻿@page "/add-event"
+@using TDBA.Data
+@using Microsoft.EntityFrameworkCore
+@inject NavigationManager Navigation
+@inject AppDbContext DbContext
+
+<h3>Add New Event</h3>
+
+@if (Message is not null)
+{
+    <p style="color: green;">@Message</p>
+}
+
+<EditForm Model="@NewEvent" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+
+    <div>
+        <label>Event Name:</label>
+        <InputText @bind-Value="NewEvent.Name" />
+        <ValidationMessage For="@(() => NewEvent.Name)" />
+    </div>
+
+    <div>
+        <label>Age Group:</label>
+        <InputSelect @bind-Value="NewEvent.AgeGroup">
+            <option value="1-3">1-3</option>
+            <option value="4-6">4-6</option>
+            <option value="7-9">7-9</option>
+            <option value="10-12">10-12</option>
+            <option value="13+">13+</option>
+        </InputSelect>
+        <ValidationMessage For="@(() => NewEvent.AgeGroup)" />
+    </div>
+
+    <div>
+        <label>Price Range:</label>
+        <InputSelect @bind-Value="NewEvent.PriceRange">
+            <option value="0">$0</option>
+            <option value="$">$</option>
+            <option value="$$">$$</option>
+            <option value="$$$">$$$</option>
+            <option value="$$$$">$$$$</option>
+        </InputSelect>
+        <ValidationMessage For="@(() => NewEvent.PriceRange)" />
+    </div>
+
+    <div>
+        <label>Indoor/Outdoor:</label>
+        <InputCheckbox @bind-Value="NewEvent.IsIndoor" />
+        Indoor Event
+    </div>
+
+    <button type="submit">Add Event</button>
+</EditForm>
+
+<hr />
+
+<h3>Event List</h3>
+
+@if (Events != null && Events.Any())
+{
+    <table>
+        <thead>
+            <tr>
+                <th>Event Name</th>
+                <th>Age Group</th>
+                <th>Price Range</th>
+                <th>Type</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var eventItem in Events)
+            {
+                <tr>
+                    <td>@eventItem.Name</td>
+                    <td>@eventItem.AgeGroup</td>
+                    <td>@eventItem.PriceRange</td>
+                    <td>@(eventItem.IsIndoor ? "Indoor" : "Outdoor")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <p>No events available.</p>
+}
+
+@code {
+    private EventModel NewEvent = new EventModel();
+    private List<EventModel> Events = new();
+    private string Message = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadEvents();
+    }
+
+    private async Task LoadEvents()
+    {
+        Events = await DbContext.Events.ToListAsync();
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        DbContext.Events.Add(NewEvent);
+        await DbContext.SaveChangesAsync();
+
+        Message = "Event added successfully!";
+        NewEvent = new EventModel();
+        await LoadEvents();
+    }
+}
