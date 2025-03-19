@@ -1,12 +1,14 @@
 using TDBA.Components;
 using Microsoft.EntityFrameworkCore;
 using TDBA.Data;
+using TDBA.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddDbContextFactory<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddHttpClient<WeatherService>(); //<-weather api service:)
 
 
 builder.Services.AddRazorComponents()
