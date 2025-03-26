@@ -7,7 +7,7 @@ namespace TDBA.Data
         [Key]
         public int Id { get; set; }
 
-        [Required(ErrorMessage = "Please enter an event name.")]
+        [RegularExpression("^[A-Za-z0-9\\s]+$", ErrorMessage = "Event name can only contain letters, numbers, and spaces.")]
         public string Name { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Please select an age group.")]
