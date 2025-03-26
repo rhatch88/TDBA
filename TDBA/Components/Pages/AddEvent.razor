@@ -2,59 +2,149 @@
 @using TDBA.Data
 @using Microsoft.EntityFrameworkCore
 @inject NavigationManager Navigation
-@inject AppDbContext DbContext
+@inject IDbContextFactory<AppDbContext> DbFactory
 
 <h3>Add New Event</h3>
-
-@if (!string.IsNullOrEmpty(Message))
+@if (!string.IsNullOrWhiteSpace(Message))
 {
-    <p style="color: green;">@Message</p>
+    <p style="color: green; font-weight: bold;">@Message</p>
 }
 
-<EditForm Model="@NewEvent" OnValidSubmit="HandleValidSubmit" FormName="AddEventForm">
-    <DataAnnotationsValidator />
+<br />
 
-    <div>
-        <label>Event Name:</label>
-        <InputText @bind-Value="NewEvent.Name" />
-        <ValidationMessage For="@(() => NewEvent.Name)" />
-    </div>
 
-    <div>
-        <label>Age Group:</label>
-        <InputSelect @bind-Value="NewEvent.AgeGroup">
-            <option value="1-3">1-3</option>
-            <option value="4-6">4-6</option>
-            <option value="7-9">7-9</option>
-            <option value="10-12">10-12</option>
-            <option value="13+">13+</option>
-        </InputSelect>
-        <ValidationMessage For="@(() => NewEvent.AgeGroup)" />
-    </div>
 
-    <div>
-        <label>Price Range:</label>
-        <InputSelect @bind-Value="NewEvent.PriceRange">
-            <option value="0">$0</option>
-            <option value="$">$</option>
-            <option value="$$">$$</option>
-            <option value="$$$">$$$</option>
-            <option value="$$$$">$$$$</option>
-        </InputSelect>
-        <ValidationMessage For="@(() => NewEvent.PriceRange)" />
-    </div>
-
-    <div>
-        <label>Indoor/Outdoor:</label>
-        <InputCheckbox @bind-Value="NewEvent.IsIndoor" />
-        Indoor Event
-    </div>
-
-    <button type="submit">Add Event</button>
+<EditForm Model="@NewEvent" OnValidSubmit="HandleValidSubmit" FormName="TestForm">
+    <InputText @bind-Value="NewEvent.Name" />
+    <p>Live Preview: @NewEvent.Name</p>
+    <button type="submit">Submit</button>
 </EditForm>
+
+
+
+
+
+
+@*<EditForm Model="@NewEvent" OnValidSubmit="HandleValidSubmit" FormName="AddEventForm">
+
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <label>Event Name:</label>
+    <InputText id="Name" @bind-Value="NewEvent.Name" />
+
+    <br />
+    <br />
+
+    <label>Age Group:</label>
+    <InputSelect id="AgeGroup" @bind-Value="NewEvent.AgeGroup">
+        <option value="">-- Select Age Group --</option>
+        <option value="1-3">1-3</option>
+        <option value="4-6">4-6</option>
+        <option value="7-9">7-9</option>
+        <option value="10-12">10-12</option>
+        <option value="13+">13+</option>
+    </InputSelect>
+
+    <br />
+    <br />
+
+    <label>Price Range:</label>
+    <InputSelect id="PriceRange" @bind-Value="NewEvent.PriceRange">
+        <option value="">-- Select Price Range --</option>
+        <option value="0">$0</option>
+        <option value="$">$</option>
+        <option value="$$">$$</option>
+        <option value="$$$">$$$</option>
+        <option value="$$$$">$$$$</option>
+    </InputSelect>
+
+    <br />
+    <br />
+
+    <label>Indoor?</label>
+    <InputCheckbox id="Indoor" @bind-Value="NewEvent.IsIndoor" />
+
+    <br />
+    <br />
+
+    @*TROUBLESHOOTING WITH LIVE PREVIEW*@
+    @*HERE<p><strong>Preview:</strong></p>
+    <ul>
+        <li>Name: @NewEvent.Name</li>
+        <li>Age Group: @NewEvent.AgeGroup</li>
+        <li>Price Range: @NewEvent.PriceRange</li>
+        <li>Is Indoor: @NewEvent.IsIndoor</li>
+    </ul>
+
+    <button type="submit">Submit</button>
+</EditForm>*@
 
 <hr />
 
+@code {
+    //TROUBLESHOOTING WITH TEMP BLOCK
+    protected override void OnAfterRender(bool firstRender)
+    {
+        Console.WriteLine($"DEBUG - Current Name: {NewEvent.Name}");
+    }
+    //TS END
+    
+    private EventModel NewEvent = new EventModel();
+    private List<EventModel> Events = new();
+    private string Message = string.Empty;
+
+   
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadEvents();
+    }
+
+    
+    private async Task LoadEvents()
+    {
+        using var context = DbFactory.CreateDbContext();
+        Events = await context.Events.ToListAsync();
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        try
+        {
+            using var context = DbFactory.CreateDbContext();
+            context.Events.Add(NewEvent);
+            await context.SaveChangesAsync();
+
+            Message = "Thank you for adding an event!";
+            NewEvent = new EventModel();
+            await LoadEvents();
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Message = $"Error: {ex.Message}";
+        }
+    }
+
+    private async Task DeleteEvent(int id)
+    {
+        using var context = DbFactory.CreateDbContext();
+        var eventToDelete = await context.Events.FindAsync(id);
+
+        if (eventToDelete != null)
+        {
+            context.Events.Remove(eventToDelete);
+            await context.SaveChangesAsync();
+            Message = "Event deleted.";
+            await LoadEvents();
+            StateHasChanged();
+        }
+    }
+}
+
+
+
+@*
 <h3>Event List</h3>
 
 @if (Events is not null && Events.Any())
@@ -66,6 +156,7 @@
                 <th>Age Group</th>
                 <th>Price Range</th>
                 <th>Type</th>
+                <th>Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -76,6 +167,9 @@
                     <td>@eventItem.AgeGroup</td>
                     <td>@eventItem.PriceRange</td>
                     <td>@(eventItem.IsIndoor ? "Indoor" : "Outdoor")</td>
+                    <td>
+                        <button @onclick="() => DeleteEvent(eventItem.Id)">Delete</button>
+                    </td>
                 </tr>
             }
         </tbody>
@@ -98,16 +192,43 @@ else
 
     private async Task LoadEvents()
     {
-        Events = await DbContext.Events.ToListAsync();
+        using var context = DbFactory.CreateDbContext();
+        Events = await context.Events.ToListAsync();
+    }
+
+    private async Task DeleteEvent(int id)
+    {
+        using var context = DbFactory.CreateDbContext();
+        var eventToDelete = await context.Events.FindAsync(id);
+
+        if (eventToDelete != null)
+        {
+            context.Events.Remove(eventToDelete);
+            await context.SaveChangesAsync();
+            Message = "Event deleted.";
+            await LoadEvents();
+            StateHasChanged();
+        }
     }
 
     private async Task HandleValidSubmit()
     {
-        DbContext.Events.Add(NewEvent);
-        await DbContext.SaveChangesAsync();
+        try
+        {
+            using var context = DbFactory.CreateDbContext();
+            context.Events.Add(NewEvent);
+            await context.SaveChangesAsync();
 
-        Message = "Event added successfully!";
-        NewEvent = new EventModel(); // Reset form
-        await LoadEvents();
+            Message = "Thank you for adding an event!";
+            NewEvent = new EventModel();
+            await LoadEvents();
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Message = $"Error: {ex.Message}";
+        }
     }
 }
+
+*@

@@ -46,3 +46,24 @@ public class WeatherService
         }
     }
 }
+
+// Add the WeatherData class
+public class WeatherData
+{
+    public Main? Main { get; set; }
+    public Wind? Wind { get; set; }
+    public string? Name { get; set; } // Make Name nullable
+}
+
+public class Main
+{
+    public double Temp { get; set; }
+    public double Pressure { get; set; }
+    public double Humidity { get; set; }
+}
+
+public class Wind
+{
+    public double Speed { get; set; }
+    public double Deg { get; set; }
+}
